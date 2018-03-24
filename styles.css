@@ -1,0 +1,48 @@
+.toolTip {
+  position: absolute;
+  display: none;
+  min-width: 70px;
+  height: auto;
+  background: none repeat scroll 0 0 #ffffff;
+  border: 1px solid #6F257F;
+  padding: 14px;
+  text-align: center;
+}
+
+button {
+  font-size: 35px;
+ }
+
+.axis--x {
+  font-size: 20px;
+}
+
+.axis--y {
+  font-size: 20px;
+}
+
+.tick text {
+  y: 20px;
+}
+
+.legend {
+  position: relative;
+  top: 15px;
+  right: 10px;
+}
+
+.legendHistogram {
+  position: relative;
+  top: 15px;
+  right: 10px;
+}
+
+.line {
+  fill: none;
+  stroke: steelblue;
+  stroke-width: 1.5px;
+}
+
+.bar {
+	fill: steelblue;
+}
