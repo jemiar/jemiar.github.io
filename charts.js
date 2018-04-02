@@ -24,7 +24,7 @@ var histogramChart = d3.select(".histogram"),
 //set range for x, y, z
 var x = d3.scaleLinear().range([0, width]),
     y = d3.scaleLinear().range([height, 0]),
-    z = d3.scaleOrdinal(d3.schemeCategory20)
+    z = d3.scaleOrdinal(d3.schemeCategory20),
     xHistogram = d3.scaleBand().range([0, width]).padding(0.05);
 
 //define line function
