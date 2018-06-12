@@ -28,10 +28,10 @@
             </h5>
             <ul class="nav flex-column ml-1">
               <li class="nav-item">
-                <a class="nav-link active" href="">Line - Single class</a>
+                <a class="nav-link" href="index.html">Line - Single class</a>
               </li>
               <li class="nav-item">
-                <a class="nav-link" href="linemultiple.html">Line - Multiple classes</a>
+                <a class="nav-link active" href="">Line - Multiple classes</a>
               </li>
               <li class="nav-item">
                 <a class="nav-link" href="#">Bar - Single class</a>
@@ -45,13 +45,19 @@
 
         <main role="main" class="col-md-9 ml-sm-auto col-lg-10 px-4">
           <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-            <h1 class="h2">TA working hours: Line - Single class</h1>
+            <h1 class="h2">TA working hours: Line - Multiple classes</h1>
           </div>
           <div class="row">
             <div class="col-9">
               <div class="row">
-                <button type="button" class="btn ml-3 mr-5" id="fall17btn" disabled>Fall 2017</button>
-                <button type="button" class="btn ml-5" id="spring18btn" disabled>Spring 2018</button>
+                <form class="form-inline ml-3">
+                  <label class="my-1 mr-2" for="inlineFormCustomSelectPref">Semester</label>
+                  <select class="custom-select my-1 mr-5" id="inlineFormCustomSelectPref">
+                    <option value ='1' selected>Fall 2017</option>
+                    <option value='2'>Spring 2018</option>
+                  </select>
+                  <button class="btn btn-warning my-1 ml-5" id='clearBtn'>Clear chart</button>
+                </form>
               </div>
               <svg class="chart my-4" width="800" height="450"></svg>
             </div>
@@ -68,6 +74,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js" integrity="sha384-smHYKdLADwkXOn1EmN1qk/HfnUcbVRZyYmZ4qpPea6sjB/pTJ0euyQp0Mk8ck+5T" crossorigin="anonymous"></script>
     <script src="https://d3js.org/d3.v4.min.js"></script>
-    <script src="singleline.js"></script>
+    <script src="multiline.js"></script>
   </body>
 </html>
