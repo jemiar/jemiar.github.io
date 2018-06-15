@@ -6,6 +6,8 @@ var weekNo = [
 	13, 14, 15, 16, 17
 ];
 
+var detachObject = new Object();
+
 //Select the chart svg
 //Define margin
 //Calculate width and height of the drawing area
@@ -165,191 +167,154 @@ function processData(error, dataFall17, dataSpring18) {
 		.style("font-family", "sans-serif")
 		.text("Working hours");
 
-	//Draw multiple line charts
-	//Append g element with opacity = 1
-	var classGraphic = g.selectAll('.classgrafik')
-							.data(dataFall17_paddedZero)
-							.enter()
-							.append('g')
-								.attr('class', 'classgrafik')
-								.attr("id", function(d) { return d.key.replace(/\s/g, ''); })
-								.style('opacity', 1);
+	//Function to draw lines, markers and legend
+	function draw_Lines_Markers_Legend(dat) {
+		//Append g element
+		var selection = g.selectAll('.classgrafik')
+								.data(dat)
+								.enter()
+								.append('g')
+									.attr('class', 'classgrafik')
+									.attr("id", function(d) { return d.key.replace(/\s/g, ''); });
 
-	//Draw line charts
-	classGraphic.append('path')
+		//Draw line charts
+		selection.append('path')
 					.attr('class', 'line')
 					.attr('id', function(d) { return d.key.replace(/\s/g, ''); })
 					.attr('d', function(d) { return line(d.values.sort(function(a, b) {return a.week - b.week; })); })
 					.style('stroke', function(d) { return z(d.key); })
 					.style('stroke-width', 3);
 
-	//Append g element and draw circular marker
-	classGraphic.append('g')
-					.selectAll('.marker')
-					.data(function(d) { return d.values; })
-					.enter()
-					.append('circle')
-						.attr('class', 'marker')
-						.attr('data-toggle', 'tooltip')
-						.attr('data-placement', 'top')
-						.attr('title', function(d) { return "Week " + d.week + ": " + d.total + " hrs"; })
-						.attr('cx', line.x())
-						.attr('cy', line.y())
-						.attr('r', 4.0);
-
-	//Color circle marker with appropriate color
-	classGraphic.selectAll('g')
-				.style('stroke', function(d) { return z(d.key); })
-				.style('stroke-width', 3)
-				.style('fill', function(d) { return z(d.key); });
-
-	//Add tooltip to markers
-	$('.marker').tooltip({ 'container': 'body' });
-
-	//Append buttons to legend
-	var legend = d3.select('.legend')
-						.selectAll('.courseButton')
-						.data(dataFall17_paddedZero)
+		//Append g element and draw circular marker
+		selection.append('g')
+						.selectAll('.marker')
+						.data(function(d) { return d.values; })
 						.enter()
-						.append('button')
-							.attr('class', 'courseButton btn-sm')
-							.attr('id', function(d) { return d.key.replace(/\s/g, ''); })
-							.style('background', function(d) { return z(d.key); })
-						.append('text')
-							.text(function(d) { return d.key; });
+						.append('circle')
+							.attr('class', 'marker')
+							.attr('data-toggle', 'tooltip')
+							.attr('data-placement', 'top')
+							.attr('title', function(d) { return "Week " + d.week + ": " + d.total + " hrs"; })
+							.attr('cx', line.x())
+							.attr('cy', line.y())
+							.attr('r', 4.0);
 
-	//Make text of button in the color white
-	$('.legend').find('text').css('color', 'white');
+		//Color circle marker with appropriate color
+		selection.selectAll('g')
+					.style('stroke', function(d) { return z(d.key); })
+					.style('stroke-width', 3)
+					.style('fill', function(d) { return z(d.key); });
 
-	//Add event listener to legend buttons
-	$('.courseButton')
-		.on('click', function() {
-			var item = 'g#' + this.id + '.classgrafik';
-			var lineItem = $(item);
-			if(lineItem.css('opacity') == 1) {
-				lineItem.css('opacity', 0);
-				$(this).css('background', '#d9d9d9');
-				$(this).children('text').css('color', 'black');
-				lineItem.find('.marker').tooltip('disable');
-			}
-			else {
-				lineItem.css('opacity', 1);
-				var key = 'CS ' + this.id.substr(2);
-				$(this).css('background', z(key));
-				$(this).children('text').css('color', 'white');
-				lineItem.find('.marker').tooltip('enable');
-			}
-		});
+		//Add tooltip to markers
+		$('.marker').tooltip({ 'container': 'body' });
+
+		//Append buttons to legend
+		var legend = d3.select('.legend')
+							.selectAll('.courseButton')
+							.data(dat)
+							.enter()
+							.append('button')
+								.attr('class', 'courseButton btn-sm')
+								.attr('id', function(d) { return d.key.replace(/\s/g, ''); })
+								.style('background', function(d) { return z(d.key); })
+							.append('text')
+								.text(function(d) { return d.key; });
+
+		//Make text of button in the color white
+		$('.legend').find('text').css('color', 'white');
+
+		//Add event listener to legend buttons
+		$('.courseButton')
+			.on('click', function() {
+				//Get the id of the line chart with course number as this.id
+				var item = 'g#' + this.id + '.classgrafik';
+				//Get the line chart
+				var lineItem = $(item);
+				//Check if that line chart is present
+				if(lineItem.length == 1) {
+					//If yes, detach the line chart and add it to the detach object as a value of a property
+					detachObject[item] = lineItem.detach();
+					//Change background color of that button to grey
+					$(this).css('background', '#d9d9d9');
+					//Change the text to black
+					$(this).children('text').css('color', 'black');
+				}
+				else {
+					//If the line chart is NOT present, append it back to the chart area from the detachObject
+					$('svg').children('g').append(detachObject[item]);
+					//Delete that property from the detachObject
+					delete detachObject[item];
+					//Create a key (to get color)
+					var key = 'CS ' + this.id.substr(2);
+					//Update button's background color
+					$(this).css('background', z(key));
+					//Update text color
+					$(this).children('text').css('color', 'white');
+				}
+			});
+	}
+
+	//Initially, draw with Fall 17 data
+	draw_Lines_Markers_Legend(dataFall17_paddedZero);
 
 	//Add event listener to Clear button
 	$('#clearBtn')
 		.on('click', function() {
-			$('.classgrafik').css('opacity', 0).find('.marker').tooltip('disable');
+			//Get all line charts
+			$('.classgrafik').each(function() {
+				//For each line chart, detach it from the chart area
+				//And add it to the detachObject
+				var item = 'g#' + this.id + '.classgrafik';
+				var lineItem = $(item);
+				detachObject[item] = lineItem.detach();
+			});
+			//Update button background color and text color
 			$('.courseButton').css('background', '#d9d9d9').find('text').css('color', 'black');
 
 		});
 
-	//function to draw line chart and marker
-	function draw_Line_Marker(selection) {
-		//Draw line charts
-		selection.append("path")
-					.attr("class", "line")
-					.attr("id", function(d) { return d.key; })
-					.attr("d", function(d) { return line(d.values.sort(function(a, b) {return a.week - b.week; })); })
-					.style("stroke", function(d) {return z(d.key); })
-					.style("stroke-width", 4);
-
-		//Draw circular markers
-		selection.append("g")
-					.selectAll(".marker")
-					.data(function(d) { return d.values; })
-					.enter()
-				.append("circle")
-					.attr("class", "marker")
-					.attr("data-toggle", "tooltip")
-					.attr("data-placement", "top")
-					.attr("title", function(d) { return "Week " + d.week + ": " + d.total + " hrs"; })
-					.attr("cx", line.x())
-					.attr("cy", line.y())
-					.attr("r", 4.0);
-
-		//Color markers according to their semesters
-		selection.selectAll("g")
-					.style("stroke", function(d) { return z(d.key); })
-					.style("stroke-width", 3)
-					.style("fill", function(d) { return z(d.key); });
-
-		//Add tooltip to markers
-		//Because tooltip does not show up inside a svg element
-		//We must set the option to show it in the <body>
-		$(".marker").tooltip({ "container": "body"});
-	}
-
-	//Join data to g element
-	var lineChart = g.selectAll(".lineGraphic")
-						.data(dataFall17_paddedZero[0].values)
-						.enter()
-					.append("g")
-						.attr("class", "lineGraphic");
-
-	//Draw line charts and markers
-	draw_Line_Marker(lineChart);
-
-	//Append buttons to legend
-	var legend = d3.select(".legend")
-						.selectAll(".courseButton")
-						.data(data_Combined)
-						.enter()
-						.append("button")
-							.attr("class", "courseButton btn-sm")
-						.append("text")
-							.text(function(d) { return d.key; });
-
-	//Color the 1st button
-	$(".courseButton").first().css('background', 'blue').children().css('color', 'white');
-
-	//Set event listener to course button
-	d3.selectAll('.courseButton')
-		.on('click', function(d, i) {
-			//Set style for all buttons back to white background and black text
-			d3.selectAll('.courseButton').style('background', 'white')
-				.selectAll('text').style('color', 'black');
-			//variable to store the ith element
-			var nth_btn = '.courseButton:nth-child(' + (i + 1) + ')';
-			//Set style of the clicked button to blue background and white text
-			d3.select(nth_btn).style('background', 'blue')
-				.select('text').style('color', 'white');
-			//Set domain of y axis
-			setYDomain(data_Combined[i]);
-			//Animate change in y axis
-			d3.select('#axisY')
-				.transition().duration(500)
-				.call(d3.axisLeft(y));
-
-			//Update line chart data
-			//NOTE: Need to use a parent selector. In this case 'g'
-			//Do no use d3.selectAll
-			//In order to use append below
-			var lineChartUpdate = g.selectAll('.lineGraphic')
-										.data(data_Combined[i].value);
-
-			//Remove old data
-			lineChartUpdate.exit().remove();
-
-			//Append and merge new data
-			lineChartUpdate.enter()
+	//Function update chart when changing data
+	function update(dat, chartUpdate, legendArea) {
+		//Reset detachObject
+		detachObject = {};
+		//Set y and z domains
+		setYDomain(dat);
+		setZDomain(dat);
+		//Animate axis Y transition
+		d3.select('#axisY')
+			.transition().duration(500)
+			.call(d3.axisLeft(y));
+		//Join data to chartUpdate
+		chartUpdate.data(dat);
+		//Join data to legendArea
+		var legendUpdate = legendArea.selectAll('.courseButton').data(dat);
+		//Remove old data from chartUpdate and legendUpdate
+		chartUpdate.exit().remove();
+		legendUpdate.exit().remove();
+		//Append and merge new data
+		chartUpdate.enter()
 						.append('g')
 							.attr('class', 'lineGraphic')
-						.merge(lineChartUpdate);
+						.merge(chartUpdate);
+		legendUpdate.enter()
+						.append('button')
+							.attr('class', 'courseButton')
+						.merge(legendUpdate);
+		//Remove all line charts and all legend buttons
+		d3.selectAll('.classgrafik').remove();
+		d3.selectAll('.courseButton').remove();
+		//Redraw line charts and legend buttons
+		draw_Lines_Markers_Legend(dat);
+	}
 
-			//Remove old line chart and marker
-			d3.selectAll('.lineGraphic').selectAll('path').remove();
-			d3.selectAll('.lineGraphic').selectAll('g').remove();
-
-			//Select .lineGraphic elements
-			var lineGraphicUpdate = d3.selectAll('.lineGraphic');
-
-			//Redraw line charts and markers
-			draw_Line_Marker(lineGraphicUpdate);
+	//Add event listener to select
+	d3.select('.custom-select')
+		.on('change', function() {
+			var lineChartUpdate = g.selectAll('.lineGraphic');
+			var legendDiv = d3.select('.legend');
+			if(this.value == 1)
+				update(dataFall17_paddedZero, lineChartUpdate, legendDiv);
+			else
+				update(dataSpring18_paddedZero, lineChartUpdate, legendDiv);
 		});
 }
