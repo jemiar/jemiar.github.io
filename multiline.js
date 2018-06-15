@@ -166,6 +166,7 @@ function processData(error, dataFall17, dataSpring18) {
 		.text("Working hours");
 
 	//Draw multiple line charts
+	//Append g element with opacity = 1
 	var classGraphic = g.selectAll('.classgrafik')
 							.data(dataFall17_paddedZero)
 							.enter()
@@ -174,6 +175,7 @@ function processData(error, dataFall17, dataSpring18) {
 								.attr("id", function(d) { return d.key.replace(/\s/g, ''); })
 								.style('opacity', 1);
 
+	//Draw line charts
 	classGraphic.append('path')
 					.attr('class', 'line')
 					.attr('id', function(d) { return d.key.replace(/\s/g, ''); })
@@ -181,6 +183,7 @@ function processData(error, dataFall17, dataSpring18) {
 					.style('stroke', function(d) { return z(d.key); })
 					.style('stroke-width', 3);
 
+	//Append g element and draw circular marker
 	classGraphic.append('g')
 					.selectAll('.marker')
 					.data(function(d) { return d.values; })
@@ -194,25 +197,57 @@ function processData(error, dataFall17, dataSpring18) {
 						.attr('cy', line.y())
 						.attr('r', 4.0);
 
+	//Color circle marker with appropriate color
 	classGraphic.selectAll('g')
 				.style('stroke', function(d) { return z(d.key); })
 				.style('stroke-width', 3)
 				.style('fill', function(d) { return z(d.key); });
 
+	//Add tooltip to markers
 	$('.marker').tooltip({ 'container': 'body' });
 
 	//Append buttons to legend
-	var legend = d3.select(".legend")
-						.selectAll(".courseButton")
+	var legend = d3.select('.legend')
+						.selectAll('.courseButton')
 						.data(dataFall17_paddedZero)
 						.enter()
-						.append("button")
-							.attr("class", "courseButton btn-sm")
+						.append('button')
+							.attr('class', 'courseButton btn-sm')
+							.attr('id', function(d) { return d.key.replace(/\s/g, ''); })
 							.style('background', function(d) { return z(d.key); })
-						.append("text")
+						.append('text')
 							.text(function(d) { return d.key; });
 
+	//Make text of button in the color white
 	$('.legend').find('text').css('color', 'white');
+
+	//Add event listener to legend buttons
+	$('.courseButton')
+		.on('click', function() {
+			var item = 'g#' + this.id + '.classgrafik';
+			var lineItem = $(item);
+			if(lineItem.css('opacity') == 1) {
+				lineItem.css('opacity', 0);
+				$(this).css('background', '#d9d9d9');
+				$(this).children('text').css('color', 'black');
+				lineItem.find('.marker').tooltip('disable');
+			}
+			else {
+				lineItem.css('opacity', 1);
+				var key = 'CS ' + this.id.substr(2);
+				$(this).css('background', z(key));
+				$(this).children('text').css('color', 'white');
+				lineItem.find('.marker').tooltip('enable');
+			}
+		});
+
+	//Add event listener to Clear button
+	$('#clearBtn')
+		.on('click', function() {
+			$('.classgrafik').css('opacity', 0).find('.marker').tooltip('disable');
+			$('.courseButton').css('background', '#d9d9d9').find('text').css('color', 'black');
+
+		});
 
 	//function to draw line chart and marker
 	function draw_Line_Marker(selection) {
