@@ -17,18 +17,13 @@ var chart = d3.select(".chart"),
 	g = chart.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
 //Set ranges for x and y axes, and z (color)
-var x = d3.scaleLinear().range([0, width]),
+var x = d3.scaleBand().range([0, width]).padding(0.2),
 	y = d3.scaleLinear().range([height, 0]);
 	z = d3.scaleOrdinal(["steelblue", "#dd1c77"]);
 
 //Set domain for x axis, and z(color)
-x.domain(d3.extent(weekNo));
+x.domain(weekNo);
 z.domain(["Fall17", "Spring18"]);
-
-//Define line function
-var line = d3.line()
-				.x(function(d) { return x(d.week); })
-				.y(function(d) { return y(d.total); });
 
 //Read data from 2 files, then use await() when finish reading and call assignData function
 //callback function type() used for convert string to number
@@ -156,51 +151,41 @@ function processData(error, dataFall17, dataSpring18) {
 		.style("font-family", "sans-serif")
 		.text("Working hours");
 
-	//function to draw line chart and marker
-	function draw_Line_Marker(selection) {
-		//Draw line charts
-		selection.append("path")
-					.attr("class", "line")
-					.attr("id", function(d) { return d.key; })
-					.attr("d", function(d) { return line(d.values.sort(function(a, b) {return a.week - b.week; })); })
-					.style("stroke", function(d) {return z(d.key); })
-					.style("stroke-width", 4);
-
-		//Draw circular markers
-		selection.append("g")
-					.selectAll(".marker")
+	//function to draw bar charts
+	function draw_Bar_Chart(selection) {
+		//Draw bar charts
+		selection.selectAll('.bar')
 					.data(function(d) { return d.values; })
-					.enter()
-				.append("circle")
-					.attr("class", "marker")
-					.attr("data-toggle", "tooltip")
-					.attr("data-placement", "top")
-					.attr("title", function(d) { return "Week " + d.week + ": " + d.total + " hrs"; })
-					.attr("cx", line.x())
-					.attr("cy", line.y())
-					.attr("r", 4.0);
+					.enter().append('rect')
+						.attr('class', 'bar')
+						.attr('x', function(d) {
+							//Below is how you get the parentNode, as well as its data
+							if(d3.select(this.parentNode).datum().key == 'Fall17')
+								return x(d.week);
+							else
+								return x(d.week) + x.bandwidth() / 2;
+						})
+						.attr('width', x.bandwidth() / 2)
+						.attr('y', function(d) { return y(d.total); })
+						.attr('height', function(d) { return height - y(d.total); })
+						.style('fill', function(d) { return z(d3.select(this.parentNode).datum().key); })
+						.attr('data-toggle', 'tooltip')
+						.attr('data-placement', 'top')
+						.attr('title', function(d) { return 'Week ' + d.week + ': ' + d.total + ' hrs'; });
 
-		//Color markers according to their semesters
-		selection.selectAll("g")
-					.style("stroke", function(d) { return z(d.key); })
-					.style("stroke-width", 3)
-					.style("fill", function(d) { return z(d.key); });
-
-		//Add tooltip to markers
-		//Because tooltip does not show up inside a svg element
-		//We must set the option to show it in the <body>
-		$(".marker").tooltip({ "container": "body"});
+		//Add tooltip to bar charts
+		$('.bar').tooltip({ 'container': 'body'});
 	}
 
 	//Join data to g element
-	var lineChart = g.selectAll(".lineGraphic")
+	var barChart = g.selectAll(".barGraphic")
 						.data(data_Combined[0].value)
 						.enter()
 					.append("g")
-						.attr("class", "lineGraphic");
+						.attr("class", "barGraphic");
 
 	//Draw line charts and markers
-	draw_Line_Marker(lineChart);
+	draw_Bar_Chart(barChart);
 
 	//Append buttons to legend
 	var legend = d3.select(".legend")
@@ -233,30 +218,29 @@ function processData(error, dataFall17, dataSpring18) {
 				.transition().duration(500)
 				.call(d3.axisLeft(y));
 
-			//Update line chart data
+			//Update bar chart data
 			//NOTE: Need to use a parent selector. In this case 'g'
-			//Do no use d3.selectAll
+			//Do not use d3.selectAll
 			//In order to use append below
-			var lineChartUpdate = g.selectAll('.lineGraphic')
+			var barChartUpdate = g.selectAll('.barGraphic')
 										.data(data_Combined[i].value);
 
 			//Remove old data
-			lineChartUpdate.exit().remove();
+			barChartUpdate.exit().remove();
 
 			//Append and merge new data
-			lineChartUpdate.enter()
+			barChartUpdate.enter()
 						.append('g')
-							.attr('class', 'lineGraphic')
-						.merge(lineChartUpdate);
+							.attr('class', 'barGraphic')
+						.merge(barChartUpdate);
 
-			//Remove old line chart and marker
-			d3.selectAll('.lineGraphic').selectAll('path').remove();
-			d3.selectAll('.lineGraphic').selectAll('g').remove();
+			//Remove old bar charts
+			d3.selectAll('.barGraphic').selectAll('rect').remove();
 
-			//Select .lineGraphic elements
-			var lineGraphicUpdate = d3.selectAll('.lineGraphic');
+			//Select .barGraphic elements
+			var barGraphicUpdate = d3.selectAll('.barGraphic');
 
-			//Redraw line charts and markers
-			draw_Line_Marker(lineGraphicUpdate);
+			//Redraw bar charts
+			draw_Bar_Chart(barGraphicUpdate);
 		});
 }
