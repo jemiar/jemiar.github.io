@@ -17,7 +17,7 @@ var chart = d3.select(".chart"),
 	g = chart.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
 //Set ranges for x and y axes, and z (color)
-var x = d3.scaleBand().range([0, width]).padding(0.2),
+var x = d3.scaleBand().range([0, width]).padding(0.1),
 	y = d3.scaleLinear().range([height, 0]);
 	z = d3.scaleOrdinal(["steelblue", "#dd1c77"]);
 
@@ -112,22 +112,110 @@ function processData(error, dataFall17, dataSpring18) {
 			
 	console.log(data_Combined);
 
-	//Function to set axis y domain
-	function setYDomain(data) {
-		if(data.value.length > 1)
-			y.domain(d3.extent(d3.merge([data.value[0].values.map(e => e.total), data.value[1].values.map(e => e.total)])));
+	//Variables to store histogram data of Fall17 and Spring18
+	var fall17Histogram, spring18Histogram;
+
+	//Variable to store value to check if 1 class has 2 sessions, or just 1 session
+	//1: 2sessions, 2: only fall, 3: only spring
+	var typeOfClass;
+
+	//Function to set fall17 and spring18 histogram data depending on selected class or coarse level
+	function updateData(i, coarseLevel) {
+		//Variable to store the upper limit of working hour
+		var upperLimit;
+		//Set upper limit, depending on if the class has both fall and spring sessions or just one
+		if(data_Combined[i].value.length > 1)
+			upperLimit = d3.max([
+				(d3.max(data_Combined[i].value[0].values.map(e => e.total)) / 10 + 1) * 10,
+				(d3.max(data_Combined[i].value[1].values.map(e => e.total)) / 10 + 1) * 10
+				]);
 		else
-			y.domain(d3.extent(data.value[0].values.map(e => e.total)));
+			upperLimit = (d3.max(data_Combined[i].value[0].values.map(e => e.total)) / 10 + 1) * 10;
+
+		//Variable to store linear scale used for histogram generation
+		var xScale = d3.scaleLinear()
+						.domain([0, upperLimit])
+						.range([0, width]);
+
+		//Function to generate histogram
+		function generateHistogram(data) {
+			var histogram = d3.histogram()
+								.domain(xScale.domain())
+								.thresholds(xScale.ticks(upperLimit / coarseLevel))
+								(data.filter(e => e.total != 0).map(el => el.total));
+
+			histogram.pop();
+
+			return histogram.map(function(d) {
+				return {
+					key: "[" + d.x0 + ", " + d.x1 + "]",
+					frequency: d.length
+				}
+			});
+		}
+
+		if(data_Combined[i].value.length > 1) {
+			fall17Histogram = generateHistogram(data_Combined[i].value[0].values);
+			spring18Histogram = generateHistogram(data_Combined[i].value[1].values);
+			typeOfClass = 1;
+		} else {
+			if(data_Combined[i].value[0].key == 'Fall17') {
+				fall17Histogram = generateHistogram(data_Combined[i].value[0].values);
+				typeOfClass = 2;
+			} else {
+				spring18Histogram = generateHistogram(data_Combined[i].value[1].values);
+				typeOfClass = 3;
+			}
+		}
 	}
 
-	//Set y domain for 1st class
-	setYDomain(data_Combined[0]);
+	//Setup for 1st class
+	updateData(0, 10);
+
+	//Function to set domain for x and y axes
+	function setDomain() {
+		//Set x domain
+		if(typeOfClass > 2)
+			x.domain(spring18Histogram.map(e => e.key));
+		else
+			x.domain(fall17Histogram.map(e => e.key));
+
+		//Set y domain
+		switch(typeOfClass) {
+			case 1:
+				y.domain([
+					0,
+					d3.max([
+						d3.max(fall17Histogram.map(e => e.frequency)),
+						d3.max(spring18Histogram.map(e => e.frequency))
+						])
+					]);
+				break;
+			case 2:
+				y.domain([
+					0,
+					d3.max(fall17Histogram.map(e => e.frequency))
+					]);
+				break;
+			case 3:
+				y.domain([
+					0,
+					d3.max(spring18Histogram.map(e => e.frequency))
+					]);
+				break;
+			default:
+				console.log('Error');
+		}
+	}
+
+	//Call setDomain() to set x, y domain
+	setDomain();
 
 	//Draw x axis
 	g.append("g")
 		.attr("id", "axisX")
 		.attr("transform", "translate(0," + height + ")")
-		.call(d3.axisBottom(x).ticks(17))
+		.call(d3.axisBottom(x))
 	.append("text")
 		.attr("transform", "translate(" + (width/2) + ",30)")
 		.attr("y", 8)
@@ -135,7 +223,7 @@ function processData(error, dataFall17, dataSpring18) {
 		.attr("fill", "#000")
 		.attr("text-align", "right")
 		.style("font-size", "30px")
-		.text("Week");
+		.text("Working hours");
 
 	//Draw y axis
 	g.append("g")
@@ -149,7 +237,7 @@ function processData(error, dataFall17, dataSpring18) {
 		.attr("fill", "#000")
 		.style("font-size", "30px")
 		.style("font-family", "sans-serif")
-		.text("Working hours");
+		.text("Frequency");
 
 	//function to draw bar charts
 	function draw_Bar_Chart(selection) {
