@@ -245,7 +245,7 @@ function processData(error, dataFall17, dataSpring18) {
 					//Delete that property from the detachObject
 					delete detachObject[item];
 					//Create a key (to get color)
-					var key = 'CS ' + this.id.substr(2);
+					var key = this.id.substr(0, 2) + ' ' + this.id.substr(2);
 					//Update button's background color
 					$(this).css('background', z(key));
 					//Update text color
